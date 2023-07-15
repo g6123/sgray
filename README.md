@@ -16,7 +16,7 @@ npm install --save sgray yargs inversify reflect-metadata
 
 InversifyJS requires the `experimentalDecorators`, `emitDecoratorMetadata` and `lib` compilation options in your `tsconfig.json` file. You can also refer to their [installation guide](https://github.com/inversify/InversifyJS/blob/master/wiki/installation.md).
 
-```json
+```json5
 // tsconfig.json
 {
   "compilerOptions": {
