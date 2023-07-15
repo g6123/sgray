@@ -1,0 +1,4 @@
+{
+  "preset": "ts-jest/presets/default",
+  "setupFilesAfterEnv": ["<rootDir>/jest.setup.ts"]
+}

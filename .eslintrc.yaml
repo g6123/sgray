@@ -1,0 +1,52 @@
+root: true
+extends:
+  - plugin:prettier/recommended
+plugins:
+  - simple-import-sort
+overrides:
+  - files:
+      - '*.ts'
+    extends:
+      - plugin:@typescript-eslint/recommended
+    rules:
+      '@typescript-eslint/ban-types': 'off'
+      '@typescript-eslint/explicit-module-boundary-types': 'off'
+      '@typescript-eslint/no-empty-function': 'off'
+      '@typescript-eslint/no-empty-interface': 'off'
+      '@typescript-eslint/no-explicit-any': 'off'
+      '@typescript-eslint/no-inferrable-types': 'off'
+      '@typescript-eslint/no-non-null-assertion': 'off'
+      '@typescript-eslint/no-redeclare': 'off'
+      '@typescript-eslint/no-unused-vars':
+        - warn
+        - varsIgnorePattern: '^_'
+          argsIgnorePattern: '^_'
+  - files:
+      - '*.js'
+      - '*.cjs'
+      - '*.mjs'
+    parser: '@babel/eslint-parser'
+    parserOptions:
+      ecmaVersion: 2021
+      sourceType: module
+      requireConfigFile: false
+      babelOptions:
+        plugins:
+          - '@babel/plugin-syntax-import-assertions'
+rules:
+  simple-import-sort/imports:
+    - warn
+    - groups:
+        - - "^\\u0000"
+        - - '^node:'
+          - '^(assert|buffer|child_process|cluster|console|constants|crypto|dgram|dns|domain|events|fs|http|https|module|net|os|path|punycode|querystring|readline|repl|stream|string_decoder|sys|timers|tls|tty|url|util|vm|zlib|freelist|v8|process|async_hooks|http2|perf_hooks)(/.*|$)'
+          - "^@?\\w"
+        - - '^#.+/.*'
+          - '^src/.*'
+        - - "^\\.\\.(?!/?$)"
+          - "^\\.\\./?$"
+          - "^\\./(?=.*/)(?!/?$)"
+          - "^\\.(?!/?$)"
+          - "^\\./?$"
+  simple-import-sort/exports: warn
+  prettier/prettier: warn
