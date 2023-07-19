@@ -5,21 +5,24 @@ import { expect, test } from 'vitest';
 
 import { CLI } from '../src/cli';
 import { Command, options } from '../src/command';
-import { Stdout } from '../src/id';
+import { Args, Stdout } from '../src/id';
 import { end } from '../src/internal/stream';
 
 @injectable()
 class FooCommand implements Command {
   static path = ['nested'];
-  static command = 'foo';
+  static command = 'foo <abc>';
   static description = 'this is foo command';
-  static options = options();
+  static options = options((y) => y.positional('abc', { type: 'string', demandOption: true }));
 
   @inject(Stdout)
   private stdout: Writable;
 
+  @inject(Args)
+  private args: { abc: string };
+
   async execute() {
-    this.stdout.write('foo\n');
+    this.stdout.write(`${this.args.abc}\n`);
   }
 }
 
@@ -46,9 +49,7 @@ test('nested command ', async () => {
   cli.register(FooCommand, BarCommand);
 
   // When
-  await cli.run(['nested', '--help']);
-
-  const foo = await cli.run(['nested', 'foo']);
+  const foo = await cli.run(['nested', 'foo', 'hello']);
   const bar = await cli.run(['nested', 'bar']);
   await cli.container.unbindAllAsync();
 
@@ -56,5 +57,5 @@ test('nested command ', async () => {
   const output = await fs.promises.readFile('/stdout', { encoding: 'utf-8' });
   expect(foo).toEqual(0);
   expect(bar).toEqual(0);
-  expect(output).toEqual('foo\nbar\n');
+  expect(output).toEqual('hello\nbar\n');
 });

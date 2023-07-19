@@ -35,7 +35,7 @@ export class ArgvBuilder {
   build(yargs: Argv, handle: ArgvHandler<CommandArgs>, store = this.store) {
     for (const [name, { command, children }] of Object.entries(store)) {
       if (command != null) {
-        yargs.command(name, command.description, command.options, (args) => handle(command, args));
+        yargs.command(command.command, command.description, command.options, (args) => handle(command, args));
       } else {
         yargs.command(name, '', (y) => this.build(y, handle, children));
       }
