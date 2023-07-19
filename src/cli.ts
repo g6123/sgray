@@ -3,6 +3,7 @@ import { Container } from 'inversify';
 import { Argv } from 'yargs';
 import Yargs from 'yargs/yargs';
 
+import { ArgvBuilder } from './internal/argv';
 import { createDefaultContainer } from './internal/container';
 import { writeln } from './internal/stream';
 import { Command, CommandStatic } from './command';
@@ -32,27 +33,21 @@ export class CLI {
 
   async run(processArgs: string[]): Promise<number> {
     const stderr = await this.container.getAsync<Writable>(ID.Stderr);
+    const commands = await this.container.getAllAsync<CommandStatic>(ID.Command);
 
-    for (const Command of await this.container.getAllAsync<CommandStatic>(ID.Command)) {
-      this.yargs.command(
-        Command.command,
-        Command.description,
-        (y) => Command.options(y),
-        async (args) => {
-          const commandContainer = this.container.createChild();
+    ArgvBuilder.from(commands).build(this.yargs, async (Command, args) => {
+      const container = this.container.createChild();
 
-          commandContainer.bind(CLI).toConstantValue(this);
-          commandContainer.bind(ID.Argv).toConstantValue(this.yargs);
-          commandContainer.bind(ID.Args).toConstantValue(args);
-          commandContainer.bind(Command).toSelf();
+      container.bind(CLI).toConstantValue(this);
+      container.bind(ID.Argv).toConstantValue(this.yargs);
+      container.bind(ID.Args).toConstantValue(args);
+      container.bind(Command).toSelf();
 
-          const command = await commandContainer.getAsync<Command>(Command);
-          const commandResult = await command.execute();
+      const command = await container.getAsync<Command>(Command);
+      const commandResult = await command.execute();
 
-          args['$?'] = commandResult;
-        },
-      );
-    }
+      args['$?'] = commandResult;
+    });
 
     return new Promise<number>((resolve) => {
       this.yargs.parse(processArgs, {}, (error, argv, output) => {

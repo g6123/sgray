@@ -1,12 +1,12 @@
 import { Writable } from 'node:stream';
-import { expect, test } from '@jest/globals';
 import { inject, injectable } from 'inversify';
 import { memfs } from 'memfs';
+import { expect, test } from 'vitest';
 
-import { CLI } from '../cli';
-import { Command, CommandArgs, options } from '../command';
-import { Args, Stdout } from '../id';
-import { end } from '../internal/stream';
+import { CLI } from '../src/cli';
+import { Command, CommandArgs, options } from '../src/command';
+import { Args, Stdout } from '../src/id';
+import { end } from '../src/internal/stream';
 
 interface PrintArgs extends CommandArgs {
   message: string;

@@ -3,7 +3,8 @@ import { Argv } from 'yargs';
 export interface CommandStatic<Args extends CommandArgs = CommandArgs> {
   new (...args: any[]): Command;
 
-  command: string | readonly string[];
+  path?: string[];
+  command: string;
   description: string;
   options: (y: Argv<CommandArgs>) => Argv<Args>;
 }
