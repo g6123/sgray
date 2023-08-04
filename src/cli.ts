@@ -18,6 +18,8 @@ export class CLI {
   container: Container;
   yargs: Argv;
 
+  private isInit: boolean = false;
+
   constructor({ container = createDefaultContainer(), yargs = Yargs().help() }: CLIOptions = {}) {
     this.container = container;
     this.yargs = yargs;
@@ -33,6 +35,30 @@ export class CLI {
 
   async run(processArgs: string[]): Promise<number> {
     const stderr = await this.container.getAsync<Writable>(ID.Stderr);
+
+    await this.init();
+
+    return new Promise<number>((resolve) => {
+      this.yargs.parse(processArgs, {}, (error, argv, output) => {
+        if (error != null) {
+          writeln(stderr, error.message);
+          resolve(1);
+        } else if (output !== '') {
+          writeln(stderr, output);
+          resolve(0);
+        } else {
+          const exitCode = argv['$?'];
+          resolve(exitCode != null ? Number(exitCode) : 0);
+        }
+      });
+    });
+  }
+
+  private async init() {
+    if (this.isInit) {
+      return;
+    }
+
     const commands = await this.container.getAllAsync<CommandStatic>(ID.Command);
 
     ArgvBuilder.from(commands).build(this.yargs, async (Command, args) => {
@@ -49,19 +75,6 @@ export class CLI {
       args['$?'] = commandResult;
     });
 
-    return new Promise<number>((resolve) => {
-      this.yargs.parse(processArgs, {}, (error, argv, output) => {
-        if (error != null) {
-          writeln(stderr, error.message);
-          resolve(1);
-        } else if (output !== '') {
-          writeln(stderr, output);
-          resolve(0);
-        } else {
-          const exitCode = argv['$?'];
-          resolve(exitCode != null ? Number(exitCode) : 0);
-        }
-      });
-    });
+    this.isInit = true;
   }
 }
