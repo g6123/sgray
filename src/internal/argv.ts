@@ -12,7 +12,7 @@ interface ArgvNode {
 export class ArgvBuilder {
   private store: Record<string, ArgvNode> = {};
 
-  add(path: string[], name: string, node: ArgvNode) {
+  private addNode(path: string[], name: string, node: ArgvNode) {
     let target = this.store;
 
     for (const name of path) {
@@ -32,6 +32,13 @@ export class ArgvBuilder {
     target[name] = node;
   }
 
+  add(command: CommandStatic) {
+    const path = command.path ?? [];
+    const [name] = command.command.split(' ', 2) as [string, ...string[]];
+    this.addNode(path, name, { command, children: {} });
+    return this;
+  }
+
   build(yargs: Argv, handle: ArgvHandler<CommandArgs>, store = this.store) {
     for (const [name, { command, children }] of Object.entries(store)) {
       if (command != null) {
@@ -46,9 +53,7 @@ export class ArgvBuilder {
     const instance = new this();
 
     for (const command of commands) {
-      const path = command.path ?? [];
-      const [name] = command.command.split(' ', 2) as [string, ...string[]];
-      instance.add(path, name, { command, children: {} });
+      instance.add(command);
     }
 
     return instance;
