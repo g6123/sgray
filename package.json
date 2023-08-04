@@ -1,6 +1,6 @@
 {
   "name": "sgray",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "author": "cumul <gg6123@naver.com>",
   "license": "MIT",
   "types": "dist/index.d.ts",
