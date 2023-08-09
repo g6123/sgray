@@ -26,12 +26,8 @@ export class CLI {
     this.yargs = yargs;
   }
 
-  register(...commands: CommandStatic[]) {
-    for (const Command of commands) {
-      this.container.bind(ID.Command).toConstantValue(Command);
-    }
-
-    return this;
+  register<T extends CommandStatic>(command: T) {
+    return this.container.bind<T>(ID.Command).toConstantValue(command);
   }
 
   async run(processArgs: string[]): Promise<number> {
