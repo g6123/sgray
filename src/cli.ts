@@ -7,12 +7,13 @@ import { ArgvBuilder } from './internal/argv';
 import { createDefaultContainer } from './internal/container';
 import { writeln } from './internal/stream';
 import { Command, CommandStatic } from './command';
-import { CLIError } from './error';
+import { defualtErrorHandler, ErrorHandler } from './error';
 import * as ID from './id';
 
 interface CLIOptions {
   container?: Container;
   yargs?: Argv;
+  onError?: ErrorHandler;
 }
 
 export class CLI {
@@ -20,10 +21,16 @@ export class CLI {
   yargs: Argv;
 
   private isInit: boolean = false;
+  private onError: ErrorHandler;
 
-  constructor({ container = createDefaultContainer(), yargs = Yargs().help() }: CLIOptions = {}) {
+  constructor({
+    container = createDefaultContainer(),
+    yargs = Yargs().help(),
+    onError = defualtErrorHandler,
+  }: CLIOptions = {}) {
     this.container = container;
     this.yargs = yargs;
+    this.onError = onError;
   }
 
   register<T extends CommandStatic>(command: T) {
@@ -31,6 +38,7 @@ export class CLI {
   }
 
   async run(processArgs: string[]): Promise<number> {
+    const stdout = await this.container.getAsync<Writable>(ID.Stdout);
     const stderr = await this.container.getAsync<Writable>(ID.Stderr);
 
     await this.init();
@@ -38,10 +46,9 @@ export class CLI {
     return new Promise<number>((resolve) => {
       this.yargs.parse(processArgs, {}, (error, argv, output) => {
         if (error != null) {
-          writeln(stderr, error.message);
-          resolve(1);
+          resolve(this.onError(error, { stdout, stderr }));
         } else if (output !== '') {
-          writeln(stderr, output);
+          writeln(stdout, output);
           resolve(0);
         } else {
           const exitCode = argv['$?'];
@@ -66,21 +73,10 @@ export class CLI {
       container.bind(ID.Args).toConstantValue(args);
       container.bind(Command).toSelf();
 
-      const stderr = await container.getAsync<Writable>(ID.Stderr);
       const command = await container.getAsync<Command>(Command);
+      const commandResult = await command.execute();
 
-      try {
-        args['$?'] = await command.execute();
-      } catch (error) {
-        if (error instanceof CLIError) {
-          args['$?'] = error.exitCode ?? 1;
-          stderr.write(error.message);
-          stderr.write('\n');
-          return;
-        }
-
-        throw error;
-      }
+      args['$?'] = commandResult ?? 0;
     });
 
     this.isInit = true;
