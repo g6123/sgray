@@ -9,24 +9,18 @@ export class CLIError extends Error {
   }
 }
 
-export type ErrorHandler = (error: unknown, context: ErrorHandlerContext) => number;
+export type ErrorHandler = (error: {}, context: ErrorHandlerContext) => number | Promise<number>;
 
 export interface ErrorHandlerContext {
   stdout: Writable;
   stderr: Writable;
 }
 
-export const defualtErrorHandler: ErrorHandler = (error, { stderr }) => {
-  const message = (error as any).message;
-
-  if (message != null) {
-    stderr.write(message);
+export const defualtErrorHandler: ErrorHandler = (error: { message?: string; exitCode?: number }, { stderr }) => {
+  if (error.message != null) {
+    stderr.write(error.message);
     stderr.write('\n');
   }
 
-  if (error instanceof CLIError) {
-    return error.exitCode;
-  }
-
-  return 1;
+  return error.exitCode ?? 1;
 };

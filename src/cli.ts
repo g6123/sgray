@@ -44,16 +44,21 @@ export class CLI {
     await this.init();
 
     return new Promise<number>((resolve) => {
-      this.yargs.parse(processArgs, {}, (error, argv, output) => {
+      this.yargs.parse(processArgs, {}, (yargsError, argv, yargsOutput) => {
+        const error = yargsError ?? argv['$!'];
+
         if (error != null) {
           resolve(this.onError(error, { stdout, stderr }));
-        } else if (output !== '') {
-          writeln(stdout, output);
-          resolve(0);
-        } else {
-          const exitCode = argv['$?'];
-          resolve(exitCode != null ? Number(exitCode) : 0);
+          return;
         }
+
+        if (yargsOutput !== '') {
+          writeln(stdout, yargsOutput);
+          resolve(0);
+          return;
+        }
+
+        resolve(argv['$?'] != null ? Number(argv['$?']) : 0);
       });
     });
   }
@@ -74,9 +79,12 @@ export class CLI {
       container.bind(Command).toSelf();
 
       const command = await container.getAsync<Command>(Command);
-      const commandResult = await command.execute();
 
-      args['$?'] = commandResult ?? 0;
+      try {
+        args['$?'] = await command.execute();
+      } catch (error) {
+        args['$!'] = error;
+      }
     });
 
     this.isInit = true;

@@ -9,7 +9,10 @@ export interface CommandStatic<Args extends CommandArgs = CommandArgs> {
   options: (y: Argv<CommandArgs>) => Argv<Args>;
 }
 
-export interface CommandArgs {}
+export interface CommandArgs {
+  '$?'?: CommandResult;
+  '$!'?: unknown;
+}
 
 export type CommandResult = number | void;
 

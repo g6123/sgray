@@ -16,27 +16,20 @@ interface PrintArgs extends CommandArgs {
 class PrintCommand implements Command {
   static command = 'print';
   static description = 'this command prints message';
-
-  static options = options<PrintArgs>((y) =>
-    y.option('message', {
-      type: 'string',
-      alias: 'm',
-      default: 'hi',
-    }),
-  );
-
-  @inject(Args)
-  private args: PrintArgs;
+  static options = options<PrintArgs>((y) => y.option('message', { type: 'string', alias: 'm', default: 'hi' }));
 
   @inject(Stdout)
   private stdout: Writable;
+
+  @inject(Args)
+  private args: PrintArgs;
 
   async execute() {
     this.stdout.write(`${this.args.message}\n`);
   }
 }
 
-test('simple print command ', async () => {
+test('simple command ', async () => {
   // Given
   const { fs } = memfs();
   const cli = new CLI();
@@ -48,7 +41,8 @@ test('simple print command ', async () => {
   await cli.container.unbindAllAsync();
 
   // Then
-  const output = await fs.promises.readFile('/stdout', { encoding: 'utf-8' });
   expect(exitCode).toEqual(0);
-  expect(output).toEqual('hello\n');
+
+  const stdout = await fs.promises.readFile('/stdout', { encoding: 'utf-8' });
+  expect(stdout).toEqual('hello\n');
 });
