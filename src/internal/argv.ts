@@ -1,4 +1,5 @@
 import { ArgumentsCamelCase, Argv } from 'yargs';
+import Yargs from 'yargs/yargs';
 
 import { CommandArgs, CommandStatic } from '../command';
 
@@ -58,4 +59,8 @@ export class ArgvBuilder {
 
     return instance;
   }
+}
+
+export function createDefaultArgv() {
+  return Yargs().help();
 }
