@@ -4,4 +4,4 @@ export { options } from './command';
 export { CLIError, type ErrorHandler, type ErrorHandlerContext } from './error';
 export { Argv as Argv, Stderr, Stdin, Stdout } from './id';
 export { array } from './util';
-export { Argument } from 'commander';
+export { Argument, createCommand as createProgram } from 'commander';
