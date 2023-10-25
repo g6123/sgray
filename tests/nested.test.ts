@@ -3,12 +3,10 @@ import { inject, injectable } from 'inversify';
 import { memfs } from 'memfs';
 import { expect, test } from 'vitest';
 
-import { CLI } from '../src/cli';
-import { Command, CommandArgs, options } from '../src/command';
-import { Args, Stdout } from '../src/id';
-import { end } from '../src/internal/stream';
+import { Argv, CLI, Command, options, Stdout } from '../src';
+import { end } from './stream';
 
-interface PrintArgs extends CommandArgs {
+interface PrintArgv {
   message: string;
 }
 
@@ -17,13 +15,13 @@ class NestedPrintCommand implements Command {
   static path = ['nested'];
   static command = 'print';
   static description = 'this command prints message';
-  static options = options<PrintArgs>((y) => y.option('message', { type: 'string', alias: 'm', default: 'hi' }));
+  static options = options((c) => c.option('-m, --message <msg>', 'message to print', 'hi'));
 
   @inject(Stdout)
   private stdout: Writable;
 
-  @inject(Args)
-  private args: PrintArgs;
+  @inject(Argv)
+  private args: PrintArgv;
 
   async execute() {
     this.stdout.write(`${this.args.message}\n`);

@@ -1,8 +1,8 @@
 import { Container, interfaces } from 'inversify';
 
-import { Stderr, Stdin, Stdout } from '../id';
+import { Stderr, Stdin, Stdout } from './id';
 
-export function createDefaultContainer(options?: interfaces.ContainerOptions) {
+export function createContainer(options?: interfaces.ContainerOptions) {
   const container = new Container(options);
   container.bind(Stdout).toConstantValue(process.stdout);
   container.bind(Stderr).toConstantValue(process.stderr);

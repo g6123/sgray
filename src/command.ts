@@ -1,26 +1,17 @@
-import { Argv } from 'yargs';
+import commander from 'commander';
 
-export interface CommandStatic<Args extends CommandArgs = CommandArgs> {
+export interface CommandStatic {
   new (...args: any[]): Command;
 
   path?: string[];
+  default?: boolean;
   command: string;
   description: string;
-  options: (y: Argv<CommandArgs>) => Argv<Args>;
+  options?: (c: commander.Command) => commander.Command;
 }
-
-export interface CommandArgs {
-  '$?'?: CommandResult;
-  '$!'?: unknown;
-}
-
-export type CommandResult = number | void;
 
 export interface Command {
-  execute(): Promise<CommandResult> | CommandResult;
+  execute(): Promise<void> | void;
 }
 
-export const options =
-  <Args extends CommandArgs>(fn: (y: Argv<CommandArgs>) => Argv<any> = (y) => y) =>
-  (y: Argv<CommandArgs>): Argv<Args> =>
-    fn(y);
+export const options = (fn: (c: commander.Command) => commander.Command) => (c: commander.Command) => fn(c);

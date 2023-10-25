@@ -3,29 +3,33 @@ import { inject, injectable } from 'inversify';
 import { memfs } from 'memfs';
 import { expect, test } from 'vitest';
 
-import { CLI } from '../src/cli';
-import { Command, CommandArgs, options } from '../src/command';
-import { Args, Stdout } from '../src/id';
-import { end } from '../src/internal/stream';
+import { Argv, CLI, Command, options, Stdout } from '../src';
+import { end } from './stream';
 
-interface PrintArgs extends CommandArgs {
+interface PrintArgv {
   message: string;
+  times: number;
 }
 
 @injectable()
 class PrintCommand implements Command {
   static command = 'print';
   static description = 'this command prints message';
-  static options = options<PrintArgs>((y) => y.option('message', { type: 'string', alias: 'm', default: 'hi' }));
+
+  static options = options((c) =>
+    c.argument('[message]', 'message to print', 'hi').option('-t, --times <num>', 'print repeatedly', Number, 1),
+  );
 
   @inject(Stdout)
   private stdout: Writable;
 
-  @inject(Args)
-  private args: PrintArgs;
+  @inject(Argv)
+  private argv: PrintArgv;
 
   async execute() {
-    this.stdout.write(`${this.args.message}\n`);
+    for (let i = 0; i < this.argv.times; i++) {
+      this.stdout.write(`${this.argv.message}\n`);
+    }
   }
 }
 
@@ -37,12 +41,12 @@ test('simple command ', async () => {
   cli.register(PrintCommand);
 
   // When
-  const exitCode = await cli.run(['print', '-m', 'hello']);
+  const exitCode = await cli.run(['print', '-t', '3', 'hello']);
   await cli.container.unbindAllAsync();
 
   // Then
   expect(exitCode).toEqual(0);
 
   const stdout = await fs.promises.readFile('/stdout', { encoding: 'utf-8' });
-  expect(stdout).toEqual('hello\n');
+  expect(stdout).toEqual(['hello', 'hello', 'hello', ''].join('\n'));
 });

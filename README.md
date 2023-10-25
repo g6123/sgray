@@ -1,17 +1,17 @@
 # sgray
 
-[Yargs](https://yargs.js.org/), [inversified](https://inversify.io/).
+[Commander.js](https://github.com/tj/commander.js), [inversified](https://inversify.io/).
 
-`sgray` provides a DI/IoC mechanism for CLI applications with Yargs and InversifyJS.
+`sgray` provides a DI/IoC mechanism for CLI applications with Commander.js and InversifyJS.
 
 ## Installation
 
 Install `sgray` and its peer dependencies.
 
 ```shell
-yarn add sgray yargs inversify reflect-metadata
-pnpm add sgray yargs inversify reflect-metadata
-npm install --save sgray yargs inversify reflect-metadata
+yarn add sgray inversify reflect-metadata
+pnpm add sgray inversify reflect-metadata
+npm install --save sgray inversify reflect-metadata
 ```
 
 InversifyJS requires the `experimentalDecorators`, `emitDecoratorMetadata` and `lib` compilation options in your `tsconfig.json` file.
@@ -35,10 +35,9 @@ import 'reflect-metadata';
 
 import { exit } from 'node:process';
 import { inject, injectable } from 'inversify';
-import { Args, CLI, Command, CommandArgs, options } from 'sgray';
-import { hideBin } from 'yargs/helpers';
+import { Argv, CLI, Command, CommandArgv, options } from 'sgray';
 
-interface GreetArgs extends CommandArgs {
+interface GreetArgv {
   message: string;
 }
 
@@ -46,17 +45,17 @@ interface GreetArgs extends CommandArgs {
 class GreetCommand implements Command {
   static command = 'greet';
   static description = 'prints greeting message';
-  static options = options<GreetArgs>((y) => y.option('message', { type: 'string', alias: 'm', default: 'hi' }));
+  static options = options((c) => c.option('-m, --message <string>', 'message to print'));
 
-  @inject(Args)
-  private args: GreetArgs;
+  @inject(Argv)
+  private argv: GreetArgv;
 
   async execute() {
-    console.log(this.args.message);
+    console.log(this.argv.message);
   }
 }
 
 const cli = new CLI();
 cli.register(GreetCommand);
-cli.run(hideBin(process.argv)).then(exit);
+cli.run(process.argv.slice(2)).then(exit);
 ```

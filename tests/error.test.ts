@@ -3,17 +3,13 @@ import { inject, injectable } from 'inversify';
 import { memfs } from 'memfs';
 import { describe, expect, test } from 'vitest';
 
-import { CLI } from '../src/cli';
-import { Command, options } from '../src/command';
-import { CLIError } from '../src/error';
-import { Args, Stderr } from '../src/id';
-import { end } from '../src/internal/stream';
+import { Argv, CLI, CLIError, Command, options, Stderr } from '../src';
+import { end } from './stream';
 
 @injectable()
 class UnknownErrorCommand implements Command {
   static command = 'error';
   static description = 'this command fails with unknown error';
-  static options = options();
 
   async execute() {
     throw new Error('unknown error');
@@ -42,9 +38,9 @@ test('unknown error', async () => {
 class CLIErrorCommand implements Command {
   static command = 'error';
   static description = 'this command fails with known CLI error';
-  static options = options((y) => y.option('exitCode', { type: 'number' }));
+  static options = options((c) => c.option('--exit-code <code>', 'program exit code', Number));
 
-  @inject(Args) private args: { exitCode?: number };
+  @inject(Argv) private args: { exitCode?: number };
 
   async execute() {
     throw new CLIError('known error', this.args.exitCode);
@@ -60,9 +56,7 @@ describe('cli error', () => {
     cli.register(CLIErrorCommand);
 
     // When
-    const exitCode = await cli.run(
-      ['error'].concat(given.exitCode == null ? [] : ['--exit-code', `${given.exitCode}`]),
-    );
+    const exitCode = await cli.run(given.exitCode == null ? ['error'] : ['error', '--exit-code', `${given.exitCode}`]);
     await cli.container.unbindAllAsync();
 
     // Then

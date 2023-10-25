@@ -1,33 +1,31 @@
 import { Writable } from 'node:stream';
+import { createCommand as createProgram } from 'commander';
 import { Container } from 'inversify';
-import { Argv } from 'yargs';
 
-import { ArgvBuilder, createDefaultArgv } from './internal/argv';
-import { createDefaultContainer } from './internal/container';
-import { writeln } from './internal/stream';
 import { Command, CommandStatic } from './command';
+import { createContainer } from './container';
 import { defualtErrorHandler, ErrorHandler } from './error';
 import * as ID from './id';
+import { ProgramBuilder, ProgramInit } from './program';
 
 interface CLIOptions {
   container?: Container;
-  yargs?: () => Argv;
+  program?: ProgramInit;
   onError?: ErrorHandler;
 }
 
 export class CLI {
   container: Container;
-
-  private createYargs: () => Argv;
-  private onError: ErrorHandler;
+  program: ProgramInit;
+  onError: ErrorHandler;
 
   constructor({
-    container = createDefaultContainer(),
-    yargs = createDefaultArgv,
+    container = createContainer(),
+    program = createProgram,
     onError = defualtErrorHandler,
   }: CLIOptions = {}) {
     this.container = container;
-    this.createYargs = yargs;
+    this.program = program;
     this.onError = onError;
   }
 
@@ -35,55 +33,33 @@ export class CLI {
     return this.container.bind<T>(ID.Command).toConstantValue(command);
   }
 
-  async run(processArgs: string[]): Promise<number> {
-    const yargs = this.createYargs();
-    const commands = await this.container.getAllAsync<CommandStatic>(ID.Command);
-
-    ArgvBuilder.from(commands).build(yargs, async (Command, args) => {
-      const container = this.container.createChild();
-
-      container.bind(CLI).toConstantValue(this);
-      container.bind(ID.Argv).toConstantValue(yargs);
-      container.bind(ID.Args).toConstantValue(args);
-      container.bind(Command).toSelf();
-
-      const command = await container.getAsync<Command>(Command);
-
-      try {
-        args['$?'] = await command.execute();
-      } catch (error) {
-        args['$!'] = error;
-      }
-    });
-
+  async run(processArgv: string[]) {
     const stdout = await this.container.getAsync<Writable>(ID.Stdout);
     const stderr = await this.container.getAsync<Writable>(ID.Stderr);
+    const commands = await this.container.getAllAsync<CommandStatic>(ID.Command);
 
-    return new Promise<number>((resolve) => {
-      yargs.parse(processArgs, {}, (yargsError, argv, yargsOutput) => {
-        const error = yargsError ?? argv['$!'];
+    const program = ProgramBuilder.from(this.program, commands)
+      .build(async (Command, argv) => {
+        const container = this.container.createChild();
 
-        if (error != null) {
-          resolve(this.onError(error, { stdout, stderr }));
-          return;
-        }
+        container.bind(CLI).toConstantValue(this);
+        container.bind(ID.Argv).toConstantValue(argv);
+        container.bind(Command).toSelf();
 
-        if (yargsOutput !== '') {
-          writeln(stdout, yargsOutput);
-          resolve(0);
-          return;
-        }
+        const command = await container.getAsync<Command>(Command);
+        return command.execute();
+      })
+      .exitOverride();
 
-        resolve(argv['$?'] != null ? Number(argv['$?']) : 0);
-      });
-    });
+    try {
+      await program.parseAsync(processArgv, { from: 'user' });
+      return 0;
+    } catch (error) {
+      return this.onError(error as {}, { stdout, stderr });
+    }
   }
 
   clone() {
-    return new CLI({
-      container: this.container,
-      yargs: this.createYargs,
-      onError: this.onError,
-    });
+    return new CLI(this);
   }
 }
