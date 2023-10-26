@@ -38,7 +38,7 @@ test('unknown error', async () => {
 class CLIErrorCommand implements Command {
   static command = 'error';
   static description = 'this command fails with known CLI error';
-  static options = options((c) => c.option('--exit-code <code>', 'program exit code', Number));
+  static options = options((cmd) => cmd.option('--exit-code <code>', 'program exit code', Number));
 
   @inject(Argv) private args: { exitCode?: number };
 

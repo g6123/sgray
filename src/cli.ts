@@ -1,5 +1,5 @@
 import { Writable } from 'node:stream';
-import { createCommand as createProgram } from 'commander';
+import { CommanderError, createCommand as createProgram } from 'commander';
 import { Container } from 'inversify';
 
 import { Command, CommandStatic } from './command';
@@ -38,23 +38,25 @@ export class CLI {
     const stderr = await this.container.getAsync<Writable>(ID.Stderr);
     const commands = await this.container.getAllAsync<CommandStatic>(ID.Command);
 
-    const program = ProgramBuilder.from(this.program, commands)
-      .build(async (Command, argv) => {
-        const container = this.container.createChild();
+    const program = ProgramBuilder.from(this.program, commands).build(async (Command, argv) => {
+      const container = this.container.createChild();
 
-        container.bind(CLI).toConstantValue(this);
-        container.bind(ID.Argv).toConstantValue(argv);
-        container.bind(Command).toSelf();
+      container.bind(CLI).toConstantValue(this);
+      container.bind(ID.Argv).toConstantValue(argv);
+      container.bind(Command).toSelf();
 
-        const command = await container.getAsync<Command>(Command);
-        return command.execute();
-      })
-      .exitOverride();
+      const command = await container.getAsync<Command>(Command);
+      return command.execute();
+    });
 
     try {
       await program.parseAsync(processArgv, { from: 'user' });
       return 0;
     } catch (error) {
+      if (error instanceof CommanderError) {
+        return error.exitCode;
+      }
+
       return this.onError(error as {}, { stdout, stderr });
     }
   }

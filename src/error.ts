@@ -9,7 +9,7 @@ export class CLIError extends Error {
   }
 }
 
-export type ErrorHandler = (error: {}, context: ErrorHandlerContext) => number | Promise<void>;
+export type ErrorHandler = (error: {}, context: ErrorHandlerContext) => number | Promise<number>;
 
 export interface ErrorHandlerContext {
   stdout: Writable;

@@ -1,5 +1,7 @@
 import commander from 'commander';
 
+export interface CommandArgv {}
+
 export interface CommandStatic {
   new (...args: any[]): Command;
 

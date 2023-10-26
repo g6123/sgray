@@ -16,8 +16,8 @@ class PrintCommand implements Command {
   static command = 'print';
   static description = 'this command prints message';
 
-  static options = options((c) =>
-    c.argument('[message]', 'message to print', 'hi').option('-t, --times <num>', 'print repeatedly', Number, 1),
+  static options = options((cmd) =>
+    cmd.argument('[message]', 'message to print', 'hi').option('-t, --times <num>', 'print repeatedly', Number, 1),
   );
 
   @inject(Stdout)

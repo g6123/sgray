@@ -15,7 +15,7 @@ class NestedPrintCommand implements Command {
   static path = ['nested'];
   static command = 'print';
   static description = 'this command prints message';
-  static options = options((c) => c.option('-m, --message <msg>', 'message to print', 'hi'));
+  static options = options((cmd) => cmd.option('-m, --message <msg>', 'message to print', 'hi'));
 
   @inject(Stdout)
   private stdout: Writable;

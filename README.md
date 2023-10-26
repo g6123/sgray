@@ -2,7 +2,7 @@
 
 [Commander.js](https://github.com/tj/commander.js), [inversified](https://inversify.io/).
 
-`sgray` provides a DI/IoC mechanism for CLI applications with Commander.js and InversifyJS.
+This package provides a DI/IoC mechanism for CLI applications with Commander.js and InversifyJS.
 
 ## Installation
 
@@ -35,7 +35,7 @@ import 'reflect-metadata';
 
 import { exit } from 'node:process';
 import { inject, injectable } from 'inversify';
-import { Argv, CLI, Command, CommandArgv, options } from 'sgray';
+import { Argv, CLI, Command, options } from 'sgray';
 
 interface GreetArgv {
   message: string;
@@ -45,7 +45,7 @@ interface GreetArgv {
 class GreetCommand implements Command {
   static command = 'greet';
   static description = 'prints greeting message';
-  static options = options((c) => c.option('-m, --message <string>', 'message to print'));
+  static options = options((cmd) => cmd.option('-m, --message <string>', 'message to print'));
 
   @inject(Argv)
   private argv: GreetArgv;

@@ -5,8 +5,8 @@ import { CommandStatic } from './command';
 export type ProgramInit = () => commander.Command;
 
 interface CommandNode {
-  name: string;
-  command: CommandStatic | null;
+  name?: string;
+  command?: CommandStatic;
   children: Record<string, CommandNode>;
 }
 
@@ -22,7 +22,7 @@ export class ProgramBuilder {
       let parentNode = parent[name];
 
       if (parentNode == null) {
-        parentNode = parent[name] = { name, command: null, children: {} };
+        parentNode = parent[name] = { name, children: {} };
       }
 
       parent = parentNode.children;
@@ -45,28 +45,21 @@ export class ProgramBuilder {
   }
 
   build(handle: (command: CommandStatic, argv: {}) => Promise<void>) {
-    function addCommand(parent: commander.Command, { name, command: Command, children }: CommandNode) {
-      if (Command != null) {
-        const c = new SubCommand(Command.command).description(Command.description);
-        Command.options?.(c);
-        c.action((...ctx) => {
-          const argv = ctx[c.registeredArguments.length];
-          const args = c.registeredArguments.reduce<Record<string, unknown>>((acc, arg, index) => {
-            acc[arg.name()] = ctx[index];
-            return acc;
-          }, {});
-          return handle(Command, { ...argv, ...args });
-        });
-        parent.addCommand(c, { isDefault: Command.default });
+    function build({ name, command, children }: CommandNode, cmd = new SubCommand(name)) {
+      if (command != null) {
+        cmd.description(command.description);
+        command.options?.(cmd);
+        cmd.action((...input) => handle(command, parseActionArgs(input)));
       } else {
-        const c = parent.command(name);
-        Object.values(children).forEach((child) => addCommand(c, child));
+        for (const child of Object.values(children)) {
+          cmd.addCommand(build(child));
+        }
       }
+
+      return cmd.exitOverride();
     }
 
-    const program = this.init();
-    Object.values(this.store).forEach((child) => addCommand(program, child));
-    return program;
+    return build({ children: this.store }, this.init());
   }
 
   static from(init: ProgramInit, commands: CommandStatic[]) {
@@ -78,4 +71,15 @@ export class ProgramBuilder {
 
     return instance;
   }
+}
+
+function parseActionArgs(input: any[]): {} {
+  const cmd: commander.Command = input.at(-1);
+  const argv = input[cmd.registeredArguments.length];
+  const args = cmd.registeredArguments.reduce<Record<string, unknown>>((acc, arg, index) => {
+    acc[arg.name()] = input[index];
+    return acc;
+  }, {});
+  const globalArgs = cmd.optsWithGlobals();
+  return { ...globalArgs, ...args, ...argv };
 }
